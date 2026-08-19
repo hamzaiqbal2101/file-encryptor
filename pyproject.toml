@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "file-encryptor"
+version = "1.0.0"
+description = "Production-style AES-256-GCM file encryption with PBKDF2/Argon2id key derivation, streaming chunked I/O, and fail-closed decryption."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Hamza Iqbal" }]
+dependencies = [
+    "cryptography>=42.0.0",
+    "argon2-cffi>=23.1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0"]
+
+[project.scripts]
+file-encryptor = "file_encryptor.cli:main"
+
+[tool.setuptools]
+packages = ["file_encryptor"]

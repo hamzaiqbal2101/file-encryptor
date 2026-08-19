@@ -1,0 +1,6 @@
+# Runtime dependencies
+cryptography>=42.0.0
+argon2-cffi>=23.1.0
+
+# Development / testing only.
+pytest>=8.0.0

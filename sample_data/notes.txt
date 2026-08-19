@@ -1,0 +1,13 @@
+This is a plaintext sample file used to demonstrate the file-encryptor tool.
+
+Encrypt it with:
+
+    file-encryptor encrypt --input sample_data/notes.txt --output sample_data/notes.fenc
+
+Decrypt it back with:
+
+    file-encryptor decrypt --input sample_data/notes.fenc --output sample_data/notes.dec
+
+The encrypted ".fenc" format bundles the original filename (encrypted), the KDF
+parameters, salt, nonce, and the AES-256-GCM ciphertext plus authentication tag,
+so decryption restores the original name automatically.

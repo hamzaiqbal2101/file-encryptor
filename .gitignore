@@ -1,0 +1,25 @@
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Test and tooling caches
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Secrets / encrypted test artifacts
+*.fenc
+sample_data/*.enc
+sample_data/*.dec
+
+# Environment / OS noise
+.venv/
+venv/
+.env
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
