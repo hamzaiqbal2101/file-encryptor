@@ -142,11 +142,40 @@ parameters.
 
 **Why AES-256-GCM?**
 GCM is an *authenticated encryption* mode: it produces a MAC that proves both
-confidentiality and integrity. You cannot silently flip a byte, reorder a
-chunk, or swap headers without the tag check failing. AES-256 is the strongest
-standard AES variant and is hardware-accelerated on modern CPUs.
+confidentiality **and** integrity. You cannot silently flip a byte, reorder a
+chunk, or swap headers without the tag check failing. This is the key
+difference from older modes like ECB and CBC:
 
-**Why both PBKDF2 and Argon2id?**
+- **ECB** encrypts each block independently, so identical plaintext blocks
+  produce identical ciphertext blocks — patterns leak through, making it a
+  known anti-pattern for anything larger than a single block. It is never used
+  here.
+- **CBC** hides patterns, but it is *unauthenticated*: an attacker can flip
+  bits in the ciphertext (which predictably corrupts or alters the plaintext)
+  with **no detection**, and it is vulnerable to padding-oracle attacks unless
+  combined with a MAC. CBC alone provides confidentiality only.
+- **GCM** is an AEAD (authenticated encryption with associated data) mode that
+  combines AES-CTR encryption with a GHASH MAC in one operation, giving both
+  confidentiality and integrity out of the box. The 16-byte tag produced at
+  finalization is the integrity proof; verification is mandatory and cannot be
+  skipped. AES-256 is the strongest standard AES variant and is
+  hardware-accelerated on modern CPUs.
+
+**Why PBKDF2 and Argon2id instead of a raw hash?**
+A passphrase must never be used directly as the AES key, and it must never be
+turned into a key with a single fast hash like SHA-256. Reasons:
+
+- The passphrase itself is rarely 32 bytes of uniform entropy; AES keys must be
+  random-looking 32-byte values.
+- A raw hash is **fast to compute**, so an attacker who steals the `.fenc` file
+  can brute-force millions of passphrase guesses per second. A deliberate,
+  salted, iterated KDF multiplies the cost of each guess by the KDF work factor
+  — 480,000 PBKDF2 iterations, or Argon2id's 64 MiB memory-hard computation —
+  which makes offline brute-force dramatically more expensive.
+- The salt (16 random bytes per file) means the same passphrase produces a
+  different key for every file, so precomputed rainbow tables and cross-file
+  key reuse are impossible.
+
 PBKDF2-HMAC-SHA256 is the most portable and widely supported option, which is
 why it is the default. Argon2id is the current recommended password hashing
 scheme (it is memory-hard, making GPU/ASIC attacks dramatically more expensive).
@@ -188,7 +217,11 @@ or attacker-controlled file appearing at the destination path.
 ## Threat model
 
 **Protects against:**
-- Confidentiality loss if the `.fenc` file is stolen or a drive is lost.
+- Confidentiality loss of **data at rest**: if the `.fenc` file is stolen, the
+  disk is lost, or the device is seized, the contents stay unreadable without
+  the passphrase — including against casual inspection and forensic recovery
+  tools that scan raw disk sectors (the plaintext never touches the disk in
+  clear form).
 - Undetected tampering: modification of ciphertext, header, or tag.
 - Brute-force passphrase guessing offline: mitigated by a strong, salted,
   deliberately slow KDF (480k PBKDF2 iterations or memory-hard Argon2id).
@@ -208,6 +241,39 @@ or attacker-controlled file appearing at the destination path.
 - Traffic analysis of *file sizes* — the ciphertext length roughly matches the
   plaintext length plus a small constant, so an observer can infer how large a
   file was.
+- **Deniability.** A `.fenc` file is unambiguously identifiable as encrypted
+  data, and its existence, size, modification time, and the fact that a
+  passphrase exists at all are all visible to anyone with file-system access.
+  This tool provides **plausible deniability only in the sense that the
+  contents are unreadable without the passphrase** — it cannot hide that the
+  file *is* encrypted, and it offers no steganography or hidden-volume
+  mechanism.
+- **Lost passphrases.** There is **no backdoor, master key, or recovery
+  mechanism by design.** If the passphrase is forgotten, the data is
+  unrecoverable. This is deliberate: any hidden recovery path would be an
+  exploitable weakness. The only mitigation is to keep the passphrase in a
+  password manager and test decryption of a small file before trusting it.
+
+## Limitations
+
+- **Single-file scope.** This tool encrypts and decrypts one file at a time.
+  It does not encrypt directories, recursively walk trees, or batch processes.
+  For whole-disk or many-folder encryption use a dedicated tool such as
+  VeraCrypt, BitLocker, or LUKS.
+- **Symmetric, passphrase-only.** The key is always derived from a passphrase.
+  There is no support for key files, hardware tokens (YubiKey/TPM), or
+  asymmetric (public/private key) encryption, so a file cannot be encrypted
+  to multiple recipients.
+- **Performance trade-off.** The strong KDF settings are intentionally slow
+  (that is the point — they slow down attackers too), so encrypting or
+  decrypting a file costs a noticeable fraction of a second up front. Large
+  files stream at full speed regardless.
+- **Metadata is not hidden.** The `.fenc` container reveals its presence, its
+  size, and its modification time, and it is detectable as encrypted data (see
+  the threat model's *deniability* point).
+- **Security depends on the passphrase.** The cryptographic design is sound,
+  but the tool is only as strong as the passphrase you choose. The strength
+  warning is a heuristic, not a guarantee.
 
 ## Development
 
