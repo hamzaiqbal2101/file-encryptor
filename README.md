@@ -15,6 +15,8 @@ This is the third project in a cybersecurity portfolio:
 1. [Password Strength Checker](https://github.com/hamzaiqbal2101/password-strength-checker)
 2. [File Integrity Checker](https://github.com/hamzaiqbal2101/file-integrity-checker)
 3. **File Encryptor** (this project)
+4. [Subdomain Enumerator](https://github.com/hamzaiqbal2101/subdomain-enumerator)
+5. [Port Scanner](https://github.com/hamzaiqbal2101/portscanner)
 
 ---
 
